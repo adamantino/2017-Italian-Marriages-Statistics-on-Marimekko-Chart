@@ -1,6 +1,6 @@
 # 2017 Italian Marriages Statistics on Marimekko Chart
 
-Visual representation using the Marimekko Chart to show the 
+Visual representation using the Marimekko Chart to show the distribution of Marriges type in Italy in 2017, split by month
 
 ![Screen](img/Screen.png)
 
