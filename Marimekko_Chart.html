@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Matrimoni Religiosi/civili 2017</title>
+
+<style type="text/css">
+
+#gridDiv{
+    height: 60px;
+}
+
+</style>
+
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+rect {
+  stroke: #000;
+}
+
+svg {
+  shape-rendering: crispEdges;
+}
+
+
+
+</style>
+<body>
+  <div id="gridDiv"></div>
+  <div align="center" style="width:400px; display: inline-block;font-size:15px"> Matrimoni Religiosi </div>
+  <div align="center" style="width:500px; display: inline-block;font-size:15px"> Matrimoni Civili </div>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+
+
+
+var width = 960,
+    height = 500,
+    margin = 30;
+
+var x = d3.scale.linear()
+    .range([0, width - 3 * margin]);
+
+var y = d3.scale.linear()
+    .range([0, height - 2 * margin]);
+    
+var z = d3.scale.category10();
+
+var n = d3.format(",d"),
+    p = d3.format("%");
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g")
+    .attr("transform", "translate(" + 2 * margin + "," + margin + ")");
+
+d3.json("02matrixritoxmese.json", function(error, data) {
+  if (error) throw error;
+
+  var offset = 0;
+
+  // Nest values by segment. We assume each rito+mese is unique.
+  var segments = d3.nest()
+      .key(function(d) { return d.rito; })
+      .entries(data);
+
+  // Compute the total sum, the per-segment sum, and the per-market offset.
+  // You can use reduce rather than reduceRight to reverse the ordering.
+  // We also record a reference to the parent segment for each market.
+  var sum = segments.reduce(function(v, p) {
+    return (p.offset = v) + (p.sum = p.values.reduceRight(function(v, d) {
+      d.parent = p;
+      return (d.offset = v) + d.totale_matrimoni;
+    }, 0));
+  }, 0);
+
+  // Add x-axis ticks.
+  var xtick = svg.selectAll(".x")
+      .data(x.ticks(10))
+    .enter().append("g")
+      .attr("class", "x")
+      .attr("transform", function(d) { return "translate(" + x(d) + "," + y(1) + ")"; });
+
+  xtick.append("line")
+      .attr("y2", 6)
+      .style("stroke", "#000");
+
+  xtick.append("text")
+      .attr("y", 8)
+      .attr("text-anchor", "middle")
+      .attr("dy", ".71em")
+      .text(p);
+
+  // Add a group for each segment.
+  var segments = svg.selectAll(".rito")
+      .data(segments)
+    .enter().append("g")
+      .attr("class", "rito")
+      .attr("xlink:title", function(d) { return d.key; })
+      .attr("transform", function(d) { return "translate(" + x(d.offset / sum) + ")"; });
+
+  
+  // Add a rect for each mese.
+  var mese = segments.selectAll(".mese")
+      .data(function(d) { return d.values; })
+    .enter().append("a")
+      .attr("class", "mese")
+      .attr("xlink:title", function(d) { return d.mese + " " + d.parent.key + ": " + n(d.totale_matrimoni); })
+    .append("rect")
+      .attr("y", function(d) { return y(d.offset / d.parent.sum); })
+      .attr("height", function(d) { return y(d.totale_matrimoni / d.parent.sum); })
+      .attr("width", function(d) { return x(d.parent.sum / sum); })
+      .style("fill", function(d) { return z(d.mese); });
+
+
+//Add the SVG Text Element to the svg
+  var text = segments.selectAll("text")
+      .data(function(d) { return d.values;})
+    .enter().append("a")
+      .attr("class", "text")
+      .attr("xlink:title", function(d) { return d.mese; })
+     .append("text")
+      .attr("x", function(d) { return x(d.parent.sum / sum / 2); })
+      .attr("y", function(d) { return y((d.offset + 5) / d.parent.sum); })
+      .text(function(d) { if(d.rito=='civile') return d.mese });
+
+
+
+  // var text = segments.selectAll("text")
+  //     .data(segments)
+  //   .enter().append("a")
+  //     .attr("class", "text")
+  //     .attr("xlink:title", function(d) { return d.mese; })
+  //   .append("text")
+  //     .attr("x", function(d) { return x(d.parent.sum / sum / 2); })
+  //     .attr("y", function(d) { return y(d.offset / d.parent.sum); })
+  //     .text(function(d) { if(d.rito=='civile') return d.mese });
+
+});
+
+
+
+</script>
